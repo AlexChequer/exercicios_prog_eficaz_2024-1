@@ -1,3 +1,14 @@
+certificado_aiven/
+certificado_aiven/*
+
+
+*.cred
+*.pem
+.cred
+.pem
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
