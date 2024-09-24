@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import os
 import mysql.connector
 from mysql.connector import Error
@@ -861,6 +861,35 @@ def delete_carrinho(carrinho_id):
             conn.close()
 
 
+@app.route('/carrinhos/cliente/<int:cliente_id>', methods=['GET'])
+def lista_carrinhos_por_cliente(cliente_id):
+    conn = connect_db()
+    if not conn:
+        return ({'error': 'Erro ao conectar ao banco de dados'}), 500
+
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql = """
+        SELECT tbl_carrinho.id, tbl_carrinho.produto_id, tbl_carrinho.quantidade
+        FROM tbl_carrinho
+        INNER JOIN tbl_pedidos ON tbl_carrinho.id = tbl_pedidos.carrinho_id
+        WHERE tbl_pedidos.cliente_id = %s
+        """
+        cursor.execute(sql, (cliente_id,))
+        carrinhos = cursor.fetchall()
+
+        if carrinhos:
+            return jsonify(carrinhos), 200
+        else:
+            return jsonify({'message': 'Nenhum carrinho encontrado para este cliente'}), 404
+
+    except Error as err:
+        return jsonify({'error': f"Erro ao listar carrinhos: {err}"}), 400
+
+    finally:
+        cursor.close()
+        conn.close()
+
 # Pedidos
 
 @app.route('/pedidos', methods=['POST'])
@@ -1074,8 +1103,32 @@ def delete_pedido(pedido_id):
             conn.close()
 
 
+@app.route('/pedidos/cliente/<int:cliente_id>', methods=['GET'])
+def busca_pedidos_por_cliente(cliente_id):
+    conn = connect_db()
+    if not conn:
+        return jsonify({'error': 'Erro ao conectar ao banco de dados'}), 500
 
+    try:
+        cursor = conn.cursor(dictionary=True)
+        sql = "SELECT * FROM tbl_pedido WHERE cliente_id = %s"
+        cursor.execute(sql, (cliente_id,))
+        pedidos = cursor.fetchall()
+
+        if pedidos:
+            return jsonify(pedidos), 200
+        else:
+            return jsonify({'message': 'Nenhum pedido encontrado para este cliente'}), 404
+
+    except Error as err:
+        return jsonify({'error': f"Erro ao buscar pedidos: {err}"}), 400
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
